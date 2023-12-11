@@ -1,13 +1,15 @@
 package com.epam.impl.service;
 
 import com.epam.api.service.EventService;
+import com.epam.dto.model.Event;
 import com.epam.impl.repository.EventRepository;
 import lombok.extern.log4j.Log4j2;
-import com.epam.dto.model.Event;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Log4j2
@@ -34,7 +36,7 @@ public class EventServiceImpl implements EventService {
         Optional<Event> eventFromDb = eventRepository.findById(id);
         if (eventFromDb.isEmpty()) {
             log.error("It's impossible to update event with id: {} as it doesn't exist", id);
-            throw new IllegalArgumentException("It's impossible to update event with id: " + id + " as it doesn't exist");
+            throw new NoSuchElementException("It's impossible to update event with id: " + id + " as it doesn't exist");
         }
 
         Event updatedEvent = eventRepository.save(event);
@@ -47,11 +49,11 @@ public class EventServiceImpl implements EventService {
         log.info("Retrieving event with id: {}", id);
         Optional<Event> eventFromDb = eventRepository.findById(id);
         if (eventFromDb.isEmpty()) {
-            log.error("It's impossible to get event with id: {} as it doesn't exist", id);
-            throw new IllegalArgumentException("It's impossible to get event with id: " + id + " as it doesn't exist");
+            log.error("It's impossible to get event with id: {}, as it doesn't exist", id);
+            throw new NoSuchElementException("It's impossible to get event with id: " + id + ", as it doesn't exist");
         }
 
-        log.info("Event retrieved: {}", eventFromDb.get());
+        log.info("Event retrieved: {}", eventFromDb.get().toString());
         return eventFromDb.get();
     }
 
@@ -63,11 +65,19 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    public void deleteAllEvents() {
+        log.info("Deleting all events");
+        eventRepository.deleteAll();
+        log.info("Events deleted");
+    }
+
+    @Override
     public List<Event> getAllEvents() {
-        log.info("Retrieving all events");
-        List<Event> events = eventRepository.findAll();
-        log.info("Number of events retrieved: {}", events.size());
-        return events;
+        Iterable<Event> allEvents = eventRepository.findAllEvents();
+        List<Event> eventList = new ArrayList<>();
+        allEvents.forEach(eventList::add);
+        log.info("Number of events retrieved: {}", eventList.size());
+        return eventList;
     }
 
     @Override
