@@ -13,6 +13,8 @@ public interface EventService {
 
     void deleteEvent(Long id);
 
+    void deleteAllEvents();
+
     List<Event> getAllEvents();
 
     List<Event> getAllEventsByTitle(String title);
