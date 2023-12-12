@@ -1,21 +1,22 @@
 package com.epam.api.service;
 
-import com.epam.dto.model.Event;
+import com.epam.dto.model.EventRequest;
+import com.epam.dto.model.EventResponse;
 
 import java.util.List;
 
 public interface EventService {
-    Event createEvent(Event event);
+    EventResponse createEvent(EventRequest event);
 
-    Event updateEvent(Long id, Event event);
+    EventResponse updateEvent(Long id, EventRequest event);
 
-    Event getEvent(Long id);
+    EventResponse getEvent(Long id);
 
     void deleteEvent(Long id);
 
     void deleteAllEvents();
 
-    List<Event> getAllEvents();
+    List<EventResponse> getAllEvents();
 
-    List<Event> getAllEventsByTitle(String title);
+    List<EventResponse> getAllEventsByTitle(String title);
 }

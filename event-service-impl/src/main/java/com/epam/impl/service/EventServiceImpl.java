@@ -2,6 +2,8 @@ package com.epam.impl.service;
 
 import com.epam.api.service.EventService;
 import com.epam.dto.model.Event;
+import com.epam.dto.model.EventRequest;
+import com.epam.dto.model.EventResponse;
 import com.epam.impl.repository.EventRepository;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,15 +25,16 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public Event createEvent(Event event) {
+    public EventResponse createEvent(EventRequest eventRequest) {
+        Event event = EventMapper.eventRequestToEvent(eventRequest);
         log.info("Creating event: {}", event);
         Event createdEvent = eventRepository.save(event);
         log.info("Event created: {}", createdEvent);
-        return createdEvent;
+        return EventMapper.eventToEventResponse(event);
     }
 
     @Override
-    public Event updateEvent(Long id, Event event) {
+    public EventResponse updateEvent(Long id, EventRequest eventRequest) {
         log.info("Updating event with id: {}", id);
         Optional<Event> eventFromDb = eventRepository.findById(id);
         if (eventFromDb.isEmpty()) {
@@ -39,13 +42,17 @@ public class EventServiceImpl implements EventService {
             throw new NoSuchElementException("It's impossible to update event with id: " + id + " as it doesn't exist");
         }
 
+        Event event = EventMapper.eventRequestToEvent(eventRequest);
+        event.setId(id);
+
         Event updatedEvent = eventRepository.save(event);
         log.info("Event updated: {}", updatedEvent);
-        return updatedEvent;
+
+        return EventMapper.eventToEventResponse(updatedEvent);
     }
 
     @Override
-    public Event getEvent(Long id) {
+    public EventResponse getEvent(Long id) {
         log.info("Retrieving event with id: {}", id);
         Optional<Event> eventFromDb = eventRepository.findById(id);
         if (eventFromDb.isEmpty()) {
@@ -54,7 +61,8 @@ public class EventServiceImpl implements EventService {
         }
 
         log.info("Event retrieved: {}", eventFromDb.get().toString());
-        return eventFromDb.get();
+
+        return EventMapper.eventToEventResponse(eventFromDb.get());
     }
 
     @Override
@@ -72,19 +80,24 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<Event> getAllEvents() {
+    public List<EventResponse> getAllEvents() {
         Iterable<Event> allEvents = eventRepository.findAllEvents();
-        List<Event> eventList = new ArrayList<>();
-        allEvents.forEach(eventList::add);
+
+        List<EventResponse> eventList = new ArrayList<>();
+        allEvents.forEach(event -> eventList.add(EventMapper.eventToEventResponse(event)));
+
         log.info("Number of events retrieved: {}", eventList.size());
         return eventList;
     }
 
     @Override
-    public List<Event> getAllEventsByTitle(String title) {
+    public List<EventResponse> getAllEventsByTitle(String title) {
         log.info("Retrieving all events with title: {}", title);
         List<Event> events = eventRepository.findByTitle(title);
         log.info("Number of events with title '{}': {}", title, events.size());
-        return events;
+
+        return events.stream()
+                .map(EventMapper::eventToEventResponse)
+                .toList();
     }
 }

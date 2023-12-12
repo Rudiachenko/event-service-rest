@@ -1,18 +1,11 @@
 package com.epam.dto.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -20,32 +13,24 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Getter
 @Setter
-@Entity
-@Table(name = "events")
-@ToString
-public class Event {
+public class EventResponse {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    @Schema(description = "Title of the event", example = "Two days concert")
     @NotBlank(message = "Title should not be blank")
-    @Size(max = 20)
     private String title;
 
+    @Schema(description = "Place of the event", example = "Kyiv, Ukraine")
     @NotBlank(message = "Place should not be blank")
-    @Size(max = 20)
     private String place;
 
+    @Schema(description = "Speaker of the event", example = "LATEXFAUNA")
     @NotBlank(message = "Speaker should not be blank")
-    @Size(max = 30)
     private String speaker;
 
+    @Schema(description = "Type of the event", example = "concert")
     @NotBlank(message = "Event type should not be blank")
-    @Column(name = "event_type")
     private String eventType;
 
-    @NotBlank(message = "Date and time should not be blank")
-    @Column(name = "date_time")
+    @Schema(description = "Date and time of the event", example = "2023-12-22T19:00")
     private LocalDateTime dateTime;
 }

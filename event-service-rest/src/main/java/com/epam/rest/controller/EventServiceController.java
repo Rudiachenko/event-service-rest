@@ -1,11 +1,13 @@
 package com.epam.rest.controller;
 
 import com.epam.api.service.EventService;
-import com.epam.dto.model.Event;
+import com.epam.dto.model.EventRequest;
+import com.epam.dto.model.EventResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpStatus;
@@ -20,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/events")
@@ -39,20 +40,29 @@ public class EventServiceController {
             @ApiResponse(responseCode = "400", description = "Invalid event input")
     })
     @PostMapping("/create")
-    public ResponseEntity<Event> createEvent(@RequestBody Event event) {
-        Event createdEvent = eventService.createEvent(event);
+    public ResponseEntity<EventResponse> createEvent(@RequestBody EventRequest event) {
+        EventResponse createdEvent = eventService.createEvent(event);
         return ResponseEntity.ok(createdEvent);
     }
 
-    @Operation(summary = "Update an existing event", tags = {"Update Event"})
+    @Operation(summary = "View a list of available events", tags = {"Get all Events"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully updated event"),
-            @ApiResponse(responseCode = "404", description = "Event not found")
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved list"),
+            @ApiResponse(responseCode = "401", description = "You are not authorized to view the resource"),
+            @ApiResponse(responseCode = "403", description = "Accessing the resource you were trying to reach is forbidden"),
+            @ApiResponse(responseCode = "404", description = "The resource you were trying to reach is not found")
     })
-    @PutMapping("/update/{id}")
-    public ResponseEntity<Event> updateEvent(@PathVariable Long id, @RequestBody Event event) {
-        Event updatedEvent = eventService.updateEvent(id, event);
-        return ResponseEntity.ok(updatedEvent);
+    @GetMapping("/get/all")
+    public ResponseEntity<CollectionModel<EventResponse>> getAllEvents() {
+        List<EventResponse> eventResponses = eventService.getAllEvents();
+
+        CollectionModel<EventResponse> collectionModel = CollectionModel.of(eventResponses);
+        collectionModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder
+                        .methodOn(EventServiceController.class)
+                        .getAllEvents())
+                .withSelfRel());
+
+        return ResponseEntity.ok(collectionModel);
     }
 
     @Operation(summary = "Get details of a specific event", tags = {"Get Event"})
@@ -61,15 +71,50 @@ public class EventServiceController {
             @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @GetMapping("/get/{id}")
-    public EntityModel<Event> getEvent(@PathVariable Long id) {
-        Event event = eventService.getEvent(id);
+    public EntityModel<EventResponse> getEvent(@PathVariable Long id) {
+        EventResponse event = eventService.getEvent(id);
         return EntityModel.of(event,
                 WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventServiceController.class)
                                 .getEvent(id)).
                         withSelfRel(),
                 WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventServiceController.class)
                                 .getAllEvents())
+                        .withRel("events"),
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventServiceController.class)
+                                .deleteEvent(id))
+                        .withRel("delete this event"));
+    }
+
+    @Operation(summary = "View a list of available events by title", tags = {"Get Events by Title"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved list"),
+            @ApiResponse(responseCode = "404", description = "No events found with given title")
+    })
+    @GetMapping("/get/title/{title}")
+    public ResponseEntity<CollectionModel<EventResponse>> getAllEventsByTitle(@PathVariable String title) {
+        List<EventResponse> eventResponses = eventService.getAllEventsByTitle(title);
+
+        CollectionModel<EventResponse> collectionModel = CollectionModel.of(eventResponses);
+        collectionModel.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder
+                                .methodOn(EventServiceController.class)
+                                .getAllEventsByTitle(title))
+                        .withSelfRel(),
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventServiceController.class)
+                                .getAllEvents())
                         .withRel("events"));
+
+        return ResponseEntity.ok(collectionModel);
+    }
+
+    @Operation(summary = "Update an existing event", tags = {"Update Event"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully updated event"),
+            @ApiResponse(responseCode = "404", description = "Event not found")
+    })
+    @PutMapping("/update/{id}")
+    public ResponseEntity<EventResponse> updateEvent(@PathVariable Long id, @RequestBody EventRequest event) {
+        EventResponse updatedEvent = eventService.updateEvent(id, event);
+        return ResponseEntity.ok(updatedEvent);
     }
 
     @Operation(summary = "Delete a specific event", tags = {"Delete Event"})
@@ -91,39 +136,5 @@ public class EventServiceController {
     public ResponseEntity<?> deleteAllEvents() {
         eventService.deleteAllEvents();
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-    }
-
-    @Operation(summary = "View a list of available events", tags = {"Get all Events"})
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved list"),
-            @ApiResponse(responseCode = "401", description = "You are not authorized to view the resource"),
-            @ApiResponse(responseCode = "403", description = "Accessing the resource you were trying to reach is forbidden"),
-            @ApiResponse(responseCode = "404", description = "The resource you were trying to reach is not found")
-    })
-    @GetMapping("/get/all")
-    public List<EntityModel<Event>> getAllEvents() {
-        return eventService.getAllEvents().stream()
-                .map(event -> EntityModel.of(event,
-                        WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder
-                                        .methodOn(EventServiceController.class)
-                                        .getEvent(event.getId()))
-                                .withSelfRel()))
-                .collect(Collectors.toList());
-    }
-
-    @Operation(summary = "View a list of available events by title", tags = {"Get Events by Title"})
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved list"),
-            @ApiResponse(responseCode = "404", description = "No events found with given title")
-    })
-    @GetMapping("/get/title/{title}")
-    public List<EntityModel<Event>> getAllEventsByTitle(@PathVariable String title) {
-        return eventService.getAllEventsByTitle(title).stream()
-                .map(event -> EntityModel.of(event,
-                        WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder
-                                        .methodOn(EventServiceController.class)
-                                        .getEvent(event.getId()))
-                                .withSelfRel()))
-                .collect(Collectors.toList());
     }
 }
